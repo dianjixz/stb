@@ -13,9 +13,11 @@
 #ifndef INCLUDE_STB_IMAGE_DRAW_H
 #define INCLUDE_STB_IMAGE_DRAW_H
 
+
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 // Pixel format IDs.
 typedef enum {
@@ -142,8 +144,27 @@ typedef struct stb_image_s {
 #define IM_DEG2RAD(x)   (((x)*M_PI)/180)
 #define IM_RAD2DEG(x)   (((x)*180)/M_PI)
 
+int stb_image_draw_get_pixel(stb_image_t *img, int x, int y);
+void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c);
+void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, int r1, int c);
+void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c, int thickness);
+void stb_image_draw_xLine(stb_image_t *img, int x1, int x2, int y, int c);
+void stb_image_draw_yLine(stb_image_t *img, int x, int y1, int y2, int c);
+void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, int c, int thickness, bool fill);
+void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, int thickness, bool fill);
+void stb_image_draw_cross(stb_image_t *img, int x, int y, int c, int size, int thickness);
+void stb_image_scratch_draw_pixel(stb_image_t *img, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, int c);
+void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, int c);
+void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, int c, int thickness);
+void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int x_axis, int y_axis, int rotation, bool filled, int c, int thickness);
+void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, int rotation, int c, int thickness, bool fill);
 
-inline int stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
+
+
+#ifdef STB_IMAGE_DRAW_IMPLEMENTATION
+#ifndef STB_IMAGE_DRAW_IMPLEMENTATION_SRC
+#define STB_IMAGE_DRAW_IMPLEMENTATION_SRC
+int stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
 {
     if(y >= img->h || x >= img->w) return -1;
     switch (img->format) {
@@ -164,7 +185,7 @@ inline int stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
     }
 }
 
-inline void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c)
+void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c)
 {
     if(y >= img->h || x >= img->w) return ;
     switch (img->format)
@@ -197,7 +218,7 @@ inline void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c)
     }
 }
 
-static void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, int r1, int c)
+void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, int r1, int c)
 {
     for (int y = r0; y <= r1; y++) {
         for (int x = r0; x <= r1; x++) {
@@ -208,7 +229,7 @@ static void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, 
     }
 }
 
-static void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c, int thickness)
+void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c, int thickness)
 {
     if (thickness == 1) {
         int dx = abs(x1 - x0), sx = (x0 < x1) ? 1 : -1;
@@ -240,17 +261,17 @@ static void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1
     }
 }
 
-static void stb_image_draw_xLine(stb_image_t *img, int x1, int x2, int y, int c)
+void stb_image_draw_xLine(stb_image_t *img, int x1, int x2, int y, int c)
 {
     while (x1 <= x2) stb_image_draw_set_pixel(img, x1++, y, c);
 }
 
-static void stb_image_draw_yLine(stb_image_t *img, int x, int y1, int y2, int c)
+void stb_image_draw_yLine(stb_image_t *img, int x, int y1, int y2, int c)
 {
     while (y1 <= y2) stb_image_draw_set_pixel(img, x, y1++, c);
 }
 
-static void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, int c, int thickness, bool fill)
+void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, int c, int thickness, bool fill)
 {
     if (fill) {
         for (int y = ry, yy = ry + rh; y < yy; y++) {
@@ -273,7 +294,7 @@ static void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, i
         }
     }
 }
-static void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, int thickness, bool fill)
+void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, int thickness, bool fill)
 {
     if (fill) {
         stb_image_draw_point_fill(img, cx, cy, -r, r, c);
@@ -321,25 +342,25 @@ static void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, 
     }
 }
 
-static void stb_image_draw_cross(stb_image_t *img, int x, int y, int c, int size, int thickness)
+void stb_image_draw_cross(stb_image_t *img, int x, int y, int c, int size, int thickness)
 {
     stb_image_draw_line(img, x - size, y        , x + size, y        , c, thickness);
     stb_image_draw_line(img, x        , y - size, x        , y + size, c, thickness);
 }
 
-static void stb_image_scratch_draw_pixel(stb_image_t *img, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, int c)
+void stb_image_scratch_draw_pixel(stb_image_t *img, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, int c)
 {
     int _roundf = (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
     stb_image_draw_point_fill(img, x0 + dx, y0 + dy + _roundf, r0, r1, c);
 }
 
-static void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, int c)
+void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, int c)
 {
     int y = y0 +  (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
     stb_image_draw_yLine(img, x0 + dx, y + dy0, y + dy1, c);
 }
 
-static void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, int c, int thickness)
+void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, int c, int thickness)
 {
     int thickness0 = (thickness - 0) / 2;
     int thickness1 = (thickness - 1) / 2;
@@ -399,7 +420,7 @@ static void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int
     }
 }
 
-static void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int x_axis, int y_axis, int rotation, bool filled, int c, int thickness)
+void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int x_axis, int y_axis, int rotation, bool filled, int c, int thickness)
 {
     if ((x_axis > 0) && (y_axis > 0)) {
         if ((x_axis == y_axis) || (rotation == 0)) {
@@ -434,7 +455,7 @@ static void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int 
     }
 }
 
-static void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, int rotation, int c, int thickness, bool fill)
+void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, int rotation, int c, int thickness, bool fill)
 {
     int r = rotation % 180;
     if (r < 0) r += 180;
@@ -445,9 +466,13 @@ static void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int
 //                       float seed_threshold, float floating_threshold,
 //                       int c, bool invert, bool clear_background, void *mask);
 
-// void stb_image_draw_string(void *img, int x_off, int y_off, const char *str, int c, float scale, int x_spacing, int y_spacing, bool mono_space,
+// void imlib_draw_string(void *img, int x_off, int y_off, const char *str, int c, float scale, int x_spacing, int y_spacing, bool mono_space,
 //                        int char_rotation, bool char_hmirror, bool char_vflip, int string_rotation, bool string_hmirror, bool string_hflip);
-// void stb_image_draw_image_fast(void *img, void *other, int x_off, int y_off, float x_scale, float y_scale, float alpha, void *mask);
+// void imlib_draw_image_fast(void *img, void *other, int x_off, int y_off, float x_scale, float y_scale, float alpha, void *mask);
+#endif
+#endif
+
+
 
 
 #endif
