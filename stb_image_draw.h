@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <math.h>
-
+#include <stdint.h>
 
 // Pixel format IDs.
 typedef enum {
@@ -89,42 +89,16 @@ typedef enum {
     PIXFORMAT_YUV422     = (PIXFORMAT_FLAGS_CY | (PIXFORMAT_ID_YUV422 << 16) | (SUBFORMAT_ID_YUV422 << 8) | PIXFORMAT_BPP_YUV422 ),
     PIXFORMAT_YVU422     = (PIXFORMAT_FLAGS_CY | (PIXFORMAT_ID_YUV422 << 16) | (SUBFORMAT_ID_YVU422 << 8) | PIXFORMAT_BPP_YUV422 ),
     PIXFORMAT_RGB888     = (PIXFORMAT_FLAGS_CM | (PIXFORMAT_ID_RGB888 << 16) | (0                   << 8) | PIXFORMAT_BPP_888 ),
+    PIXFORMAT_BGR888     = (PIXFORMAT_FLAGS_CM | (PIXFORMAT_ID_BGR888 << 16) | (0                   << 8) | PIXFORMAT_BPP_888 ),
     PIXFORMAT_LAST       = (0xFFFFFFFFU),
 } stb_pixformat_t;
 
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 // ARGB
-
-typedef struct pixel_s {
-    char blue;
-    char green;
-    char red;
-} pixel24_t;
-
-#define pixel24232(_u24_t) \
-({\
-    __typeof__ (_u24_t) ___u24_t = _u24_t;\
-    ((*((uint32_t*)((void*)&___u24_t))) & 0xffffff00);\
-})
-//input_ uint32_t，output pixel24_t
-#define pixel32224(_u32_t) \
-({\
-    __typeof__ (_u32_t) __u32_t = _u32_t;\
-    __u32_t = __u32_t >> 8;\
-    (*((pixel24_t*)((void*)&__u32_t)));\
-})
-
 #else
 //cpu is little
-//input pixel24_t，output uint32_t
-// BGRA
-
-typedef struct stb_pixel_s {
-    unsigned char red;
-    unsigned char green;
-    unsigned char blue;
-} stb_pixel24_t;
+#endif //__BYTE_ORDER__
 
 typedef struct stb_image_s {
     void *rawdata;
@@ -133,29 +107,23 @@ typedef struct stb_image_s {
     stb_pixformat_t format;
 } stb_image_t;
 
-#define stb_pixel24232(_u24_t) \
-({\
-    __typeof__ (_u24_t) ___u24_t = _u24_t;\
-    ((*((unsigned int*)&___u24_t)) & 0x00ffffff);\
-})
-//input_ uint32_t，output pixel24_t
-#define stb_pixel32224(_u32_t) \
-({\
-    __typeof__ (_u32_t) __u32_t = _u32_t;\
-    (*((stb_pixel24_t*)&__u32_t));\
-})
 
-#define COLOR_R8_G8_B8_TO_RGB565(r8, g8, b8) ((((r8) & 0xF8) << 8) | (((g8) & 0xFC) << 3) | ((b8) >> 3))
-#define COLOR_R8_G8_B8_TO_RGB888(r8, g8, b8) ((r8 << 16 | g8 << 8 | b8) & 0xffffff)
-#define COLOR_R8_G8_B8_TO_BGR888(r8, g8, b8) ((b8 << 16 | g8 << 8 | r8) & 0xffffff)
-#define COLOR_R8_G8_B8_L_TO_RGBA(r8, g8, b8, l8) 
-#define COLOR_R8_G8_B8_L_TO_BGRA(r8, g8, b8, l8) 
-#define COLOR_R8_G8_B8_L_TO_ARGB(r8, g8, b8, l8) 
-#define COLOR_R8_G8_B8_L_TO_ABGR(r8, g8, b8, l8) 
-
-
-#endif //__BYTE_ORDER__
-
+#define COLOR_R8_G8_B8_TO_RGB565(r8, g8, b8) (uint16_t)((((uint16_t)(r8)&(uint16_t)0xf8) << 8)|(((uint16_t)(g8)&(uint16_t)0xfc)<<3)|(((uint16_t)(b8)&(uint16_t)0xf8)>>3))
+#define COLOR_R8_G8_B8_TO_RGB888(r, g, b) (uint32_t)(((uint32_t)(r)<<16)|((uint32_t)(g)<<8)|((uint32_t)(b)))
+#define COLOR_R8_G8_B8_TO_BGR888(r, g, b) (uint32_t)(((uint32_t)(b)<<16)|((uint32_t)(g)<<8)|((uint32_t)(r)))
+#define COLOR_RGB888_TO_RGB565(c32) (uint16_t)((uint16_t)(((uint32_t)(c32)&(uint32_t)0xf80000)>>8)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xfc00)>>5)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xf8)>>3))
+#define COLOR_BGR888_TO_RGB565(c32) (uint16_t)((uint16_t)(((uint32_t)(c32)&(uint32_t)0xf80000)>>19)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xfc00)>>5)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xf8)<<8))
+#define COLOR_RGB565_TO_RGB888(c16) (uint32_t)((uint32_t)(((uint32_t)(c16)&(uint32_t)0xf800)<<8)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x7e0)<<3)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x1f)<<3))
+#define COLOR_RGB565_TO_BGR888(c16) (uint32_t)((uint32_t)(((uint32_t)(c16)&(uint32_t)0xf800)>>8)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x7e0)<<3)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x1f)<<19))
+#define COLOR_RGB888_TO_R8(c32) (uint8_t)(((uint32_t)(c32)>>16)&(uint32_t)0xff)
+#define COLOR_RGB888_TO_G8(c32) (uint8_t)(((uint32_t)(c32)>>8)&(uint32_t)0xff)
+#define COLOR_RGB888_TO_B8(c32) (uint8_t)((uint32_t)(c32)&(uint32_t)0xff)
+#define COLOR_BGR888_TO_R8(c32) (uint8_t)((uint32_t)(c32)&(uint32_t)0xff)
+#define COLOR_BGR888_TO_G8(c32) (uint8_t)(((uint32_t)(c32)>>8)&(uint32_t)0xff)
+#define COLOR_BGR888_TO_B8(c32) (uint8_t)(((uint32_t)(c32)>>16)&(uint32_t)0xff)
+#define COLOR_RGB565_TO_R8(c16) (uint8_t)((uint16_t)((uint16_t)(c16)&(uint16_t)0xf800)>>8)
+#define COLOR_RGB565_TO_G8(c16) (uint8_t)((uint16_t)((uint16_t)(c16)&(uint16_t)0x07e0)>>3)
+#define COLOR_RGB565_TO_B8(c16) (uint8_t)((uint16_t)((uint16_t)(c16)&(uint16_t)0x001f)<<3)
 
 #ifndef M_PI
 #define M_PI    3.14159265f
@@ -175,38 +143,7 @@ typedef struct stb_image_s {
 #define IM_RAD2DEG(x)   (((x)*180)/M_PI)
 
 
-#define IMAGE_GET_RGB565_PIXEL(image, x, y, wlength) \
-({ \
-    __typeof__ (x) _x = (x); \
-    __typeof__ (y) _y = (y); \
-    ((unsigned short *) _image)[(wlength * _y) + _x]; \
-})
-
-#define IMAGE_PUT_RGB565_PIXEL(image, x, y, v) \
-({ \
-    __typeof__ (image) _image = (image); \
-    __typeof__ (x) _x = (x); \
-    __typeof__ (y) _y = (y); \
-    __typeof__ (v) _v = (v); \
-    ((unsigned short *) _image->data)[(_image->w * _y) + _x] = _v; \
-})
-#define IMAGE_GET_RGB888_PIXEL_(image, x, y) \
-({ \
-    __typeof__ (image) _image = (image); \
-    __typeof__ (x) _x = (x); \
-    __typeof__ (y) _y = (y); \
-    ((stb_pixel24_t *) _image->data)[(_image->w * _y) + _x]; \
-})
-
-#define IMAGE_GET_RGB888_PIXEL(image, x, y) \
-({ \
-    __typeof__ (image) _image = (image); \
-    __typeof__ (x) _x = (x); \
-    __typeof__ (y) _y = (y); \
-    stb_pixel24232(((stb_pixel24_t *) _image->data)[(_image->w * _y) + _x]); \
-})
-
-inline int  stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
+inline int stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
 {
     if(y >= img->h || x >= img->w) return -1;
     switch (img->format) {
@@ -214,7 +151,12 @@ inline int  stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
             return (int)((unsigned short *) img->rawdata)[(img->w * y) + x];
         }
         case PIXFORMAT_RGB888: {
-            return stb_pixel24232(((stb_pixel24_t *) img->rawdata)[(img->w * y) + x]);
+            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
+            return COLOR_R8_G8_B8_TO_RGB888(pix[0], pix[1], pix[2]);
+        }
+        case PIXFORMAT_BGR888: {
+            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
+            return COLOR_R8_G8_B8_TO_BGR888(pix[2], pix[1], pix[0]);
         }
         default: {
             return -1;
@@ -232,11 +174,21 @@ inline void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c)
             unsigned short *pix = (unsigned short*)img->rawdata;
             pix[img->w * y + x] = (unsigned short)c;
         }
-        break;
+        break; 
     case PIXFORMAT_RGB888:
         {
-            stb_pixel24_t *pix = (stb_pixel24_t*)img->rawdata;
-            pix[img->w * y + x] = stb_pixel32224(c);
+            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
+            pix[0] = COLOR_RGB888_TO_R8(c);
+            pix[1] = COLOR_RGB888_TO_G8(c);
+            pix[2] = COLOR_RGB888_TO_B8(c);
+        }
+        break;
+    case PIXFORMAT_BGR888:
+        {
+            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
+            pix[0] = COLOR_BGR888_TO_B8(c);
+            pix[1] = COLOR_BGR888_TO_G8(c);
+            pix[2] = COLOR_BGR888_TO_R8(c);
         }
         break;
     default:
@@ -493,9 +445,9 @@ static void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int
 //                       float seed_threshold, float floating_threshold,
 //                       int c, bool invert, bool clear_background, void *mask);
 
-// void imlib_draw_string(void *img, int x_off, int y_off, const char *str, int c, float scale, int x_spacing, int y_spacing, bool mono_space,
+// void stb_image_draw_string(void *img, int x_off, int y_off, const char *str, int c, float scale, int x_spacing, int y_spacing, bool mono_space,
 //                        int char_rotation, bool char_hmirror, bool char_vflip, int string_rotation, bool string_hmirror, bool string_hflip);
-// void imlib_draw_image_fast(void *img, void *other, int x_off, int y_off, float x_scale, float y_scale, float alpha, void *mask);
+// void stb_image_draw_image_fast(void *img, void *other, int x_off, int y_off, float x_scale, float y_scale, float alpha, void *mask);
 
 
 #endif
