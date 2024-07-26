@@ -145,6 +145,15 @@ typedef struct stb_image_s {
     (*((stb_pixel24_t*)&__u32_t));\
 })
 
+#define COLOR_R8_G8_B8_TO_RGB565(r8, g8, b8) ((((r8) & 0xF8) << 8) | (((g8) & 0xFC) << 3) | ((b8) >> 3))
+#define COLOR_R8_G8_B8_TO_RGB888(r8, g8, b8) ((r8 << 16 | g8 << 8 | b8) & 0xffffff)
+#define COLOR_R8_G8_B8_TO_BGR888(r8, g8, b8) ((b8 << 16 | g8 << 8 | r8) & 0xffffff)
+#define COLOR_R8_G8_B8_L_TO_RGBA(r8, g8, b8, l8) 
+#define COLOR_R8_G8_B8_L_TO_BGRA(r8, g8, b8, l8) 
+#define COLOR_R8_G8_B8_L_TO_ARGB(r8, g8, b8, l8) 
+#define COLOR_R8_G8_B8_L_TO_ABGR(r8, g8, b8, l8) 
+
+
 #endif //__BYTE_ORDER__
 
 
@@ -164,6 +173,7 @@ typedef struct stb_image_s {
 #define IM_MOD(a,b)     ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _b ? (_a % _b) : 0; })
 #define IM_DEG2RAD(x)   (((x)*M_PI)/180)
 #define IM_RAD2DEG(x)   (((x)*180)/M_PI)
+
 
 #define IMAGE_GET_RGB565_PIXEL(image, x, y, wlength) \
 ({ \
@@ -248,7 +258,20 @@ static void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, 
 
 static void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c, int thickness)
 {
-    if (thickness > 0) {
+    if (thickness == 1) {
+        int dx = abs(x1 - x0), sx = (x0 < x1) ? 1 : -1;
+        int dy = abs(y1 - y0), sy = (y0 < y1) ? 1 : -1;
+        int err = ((dx > dy) ? dx : -dy) / 2;
+
+        for (;;) {
+            stb_image_draw_set_pixel(img, x0, y0, c);
+            if ((x0 == x1) && (y0 == y1)) break;
+            int e2 = err;
+            if (e2 > -dx) { err -= dy; x0 += sx; }
+            if (e2 <  dy) { err += dx; y0 += sy; }
+        }
+    }
+    else {
         int thickness0 = (thickness - 0) / 2;
         int thickness1 = (thickness - 1) / 2;
         int dx = abs(x1 - x0), sx = (x0 < x1) ? 1 : -1;
@@ -278,13 +301,11 @@ static void stb_image_draw_yLine(stb_image_t *img, int x, int y1, int y2, int c)
 static void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, int c, int thickness, bool fill)
 {
     if (fill) {
-
         for (int y = ry, yy = ry + rh; y < yy; y++) {
             for (int x = rx, xx = rx + rw; x < xx; x++) {
                 stb_image_draw_set_pixel(img, x, y, c);
             }
         }
-
     } else if (thickness > 0) {
         int thickness0 = (thickness - 0) / 2;
         int thickness1 = (thickness - 1) / 2;
@@ -359,6 +380,7 @@ static void stb_image_scratch_draw_pixel(stb_image_t *img, int x0, int y0, int d
     int _roundf = (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
     stb_image_draw_point_fill(img, x0 + dx, y0 + dy + _roundf, r0, r1, c);
 }
+
 static void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, int c)
 {
     int y = y0 +  (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
