@@ -158,12 +158,47 @@ void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int d
 void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, int c, int thickness);
 void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int x_axis, int y_axis, int rotation, bool filled, int c, int thickness);
 void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, int rotation, int c, int thickness, bool fill);
-
+uint32_t stb_image_draw_blend_rgb888(uint32_t fg_color, uint32_t bg_color, uint8_t alpha);
+uint16_t stb_image_draw_blend_rgb565(uint16_t fg_color, uint16_t bg_color, uint8_t alpha);
 
 
 #ifdef STB_IMAGE_DRAW_IMPLEMENTATION
 #ifndef STB_IMAGE_DRAW_IMPLEMENTATION_SRC
 #define STB_IMAGE_DRAW_IMPLEMENTATION_SRC
+uint32_t stb_image_draw_blend_rgb888(uint32_t fg_color, uint32_t bg_color, uint8_t alpha) {
+
+    uint8_t r1 = COLOR_RGB888_TO_R8(fg_color);
+    uint8_t g1 = COLOR_RGB888_TO_G8(fg_color);
+    uint8_t b1 = COLOR_RGB888_TO_B8(fg_color);
+
+    uint8_t r2 = COLOR_RGB888_TO_R8(bg_color);
+    uint8_t g2 = COLOR_RGB888_TO_G8(bg_color);
+    uint8_t b2 = COLOR_RGB888_TO_B8(bg_color);
+
+    uint8_t r = (r1 * alpha + r2 * (255 - alpha)) / 255;
+    uint8_t g = (g1 * alpha + g2 * (255 - alpha)) / 255;
+    uint8_t b = (b1 * alpha + b2 * (255 - alpha)) / 255;
+
+    return COLOR_R8_G8_B8_TO_RGB888(r, g, b);
+}
+
+uint16_t stb_image_draw_blend_rgb565(uint16_t fg_color, uint16_t bg_color, uint8_t alpha) {
+
+    uint8_t r1 = COLOR_RGB565_TO_R8(fg_color);
+    uint8_t g1 = COLOR_RGB565_TO_G8(fg_color);
+    uint8_t b1 = COLOR_RGB565_TO_B8(fg_color);
+
+    uint8_t r2 = COLOR_RGB565_TO_R8(bg_color);
+    uint8_t g2 = COLOR_RGB565_TO_G8(bg_color);
+    uint8_t b2 = COLOR_RGB565_TO_B8(bg_color);
+
+    uint8_t r = (r1 * alpha + r2 * (255 - alpha)) / 255;
+    uint8_t g = (g1 * alpha + g2 * (255 - alpha)) / 255;
+    uint8_t b = (b1 * alpha + b2 * (255 - alpha)) / 255;
+
+    return COLOR_R8_G8_B8_TO_RGB565(r, g, b);
+}
+
 int stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
 {
     if(y >= img->h || x >= img->w) return -1;
