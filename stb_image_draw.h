@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Pixel format IDs.
 typedef enum {
     PIXFORMAT_ID_BINARY     = 1,
@@ -161,6 +165,9 @@ void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, in
 uint32_t stb_image_draw_blend_rgb888(uint32_t fg_color, uint32_t bg_color, uint8_t alpha);
 uint16_t stb_image_draw_blend_rgb565(uint16_t fg_color, uint16_t bg_color, uint8_t alpha);
 
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef STB_IMAGE_DRAW_IMPLEMENTATION
 #ifndef STB_IMAGE_DRAW_IMPLEMENTATION_SRC
