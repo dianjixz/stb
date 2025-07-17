@@ -113,7 +113,7 @@ STBIWDEF inline uint32_t stb_image_draw_get_pixel(void *data, uint32_t stride, i
     return c;
 }
 
-void stb_image_draw_point_fill(const void  *data, uint32_t stride, int cx, int cy, int r0, int r1, uint32_t c, uint32_t comp)
+STBIWDEF void stb_image_draw_point_fill(const void  *data, uint32_t stride, int cx, int cy, int r0, int r1, uint32_t c, uint32_t comp)
 {
     for (int y = r0; y <= r1; y++) {
         for (int x = r0; x <= r1; x++) {
@@ -124,7 +124,7 @@ void stb_image_draw_point_fill(const void  *data, uint32_t stride, int cx, int c
     }
 }
 
-void stb_image_draw_line(void  *data, uint32_t stride, int x0, int y0, int x1, int y1, uint32_t c, uint32_t comp, int thickness)
+STBIWDEF void stb_image_draw_line(void  *data, uint32_t stride, int x0, int y0, int x1, int y1, uint32_t c, uint32_t comp, int thickness)
 {
     if (thickness == 1) {
         int dx = abs(x1 - x0), sx = (x0 < x1) ? 1 : -1;
@@ -156,17 +156,17 @@ void stb_image_draw_line(void  *data, uint32_t stride, int x0, int y0, int x1, i
     }
 }
 
-void stb_image_draw_xLine(void  *data, uint32_t stride, int x1, int x2, int y, uint32_t c, uint32_t comp)
+STBIWDEF void stb_image_draw_xLine(void  *data, uint32_t stride, int x1, int x2, int y, uint32_t c, uint32_t comp)
 {
     while (x1 <= x2) stb_image_draw_set_pixel(data, stride, x1++, y, c, comp);
 }
 
-void stb_image_draw_yLine(void  *data, uint32_t stride, int x, int y1, int y2, uint32_t c, uint32_t comp)
+STBIWDEF void stb_image_draw_yLine(void  *data, uint32_t stride, int x, int y1, int y2, uint32_t c, uint32_t comp)
 {
     while (y1 <= y2) stb_image_draw_set_pixel(data, stride, x, y1++, c, comp);
 }
 
-void stb_image_draw_rectangle(void  *data, uint32_t stride, int rx, int ry, int rw, int rh, uint32_t c, uint32_t comp, int thickness, bool fill)
+STBIWDEF void stb_image_draw_rectangle(void  *data, uint32_t stride, int rx, int ry, int rw, int rh, uint32_t c, uint32_t comp, int thickness, bool fill)
 {
     if (fill) {
         for (int y = ry, yy = ry + rh; y < yy; y++) {
@@ -189,7 +189,7 @@ void stb_image_draw_rectangle(void  *data, uint32_t stride, int rx, int ry, int 
         }
     }
 }
-void stb_image_draw_draw_circle(void  *data, uint32_t stride, int cx, int cy, int r, uint32_t c, uint32_t comp, int thickness, bool fill)
+STBIWDEF void stb_image_draw_draw_circle(void  *data, uint32_t stride, int cx, int cy, int r, uint32_t c, uint32_t comp, int thickness, bool fill)
 {
     if (fill) {
         stb_image_draw_point_fill(data, stride, cx, cy, -r, r, c, comp);
@@ -237,25 +237,25 @@ void stb_image_draw_draw_circle(void  *data, uint32_t stride, int cx, int cy, in
     }
 }
 
-void stb_image_draw_cross(void  *data, uint32_t stride, int x, int y, uint32_t c, uint32_t comp, int size, int thickness)
+STBIWDEF void stb_image_draw_cross(void  *data, uint32_t stride, int x, int y, uint32_t c, uint32_t comp, int size, int thickness)
 {
     stb_image_draw_line(data, stride, x - size, y        , x + size, y        , c, comp, thickness);
     stb_image_draw_line(data, stride, x        , y - size, x        , y + size, c, comp, thickness);
 }
 
-void stb_image_scratch_draw_pixel(void  *data, uint32_t stride, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, uint32_t c, uint32_t comp)
+STBIWDEF void stb_image_scratch_draw_pixel(void  *data, uint32_t stride, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, uint32_t c, uint32_t comp)
 {
     int _roundf = (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
     stb_image_draw_point_fill(data, stride, x0 + dx, y0 + dy + _roundf, r0, r1, c, comp);
 }
 
-void stb_image_scratch_draw_line(void  *data, uint32_t stride, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, uint32_t c, uint32_t comp)
+STBIWDEF void stb_image_scratch_draw_line(void  *data, uint32_t stride, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, uint32_t c, uint32_t comp)
 {
     int y = y0 +  (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
     stb_image_draw_yLine(data, stride, x0 + dx, y + dy0, y + dy1, c, comp);
 }
 
-void stb_image_scratch_draw_sheared_ellipse(void  *data, uint32_t stride, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, uint32_t c, uint32_t comp, int thickness)
+STBIWDEF void stb_image_scratch_draw_sheared_ellipse(void  *data, uint32_t stride, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, uint32_t c, uint32_t comp, int thickness)
 {
     int thickness0 = (thickness - 0) / 2;
     int thickness1 = (thickness - 1) / 2;
@@ -315,7 +315,7 @@ void stb_image_scratch_draw_sheared_ellipse(void  *data, uint32_t stride, int x0
     }
 }
 
-void stb_image_scratch_draw_rotated_ellipse(void  *data, uint32_t stride, int x, int y, int x_axis, int y_axis, int rotation, bool filled, uint32_t c, uint32_t comp, int thickness)
+STBIWDEF void stb_image_scratch_draw_rotated_ellipse(void  *data, uint32_t stride, int x, int y, int x_axis, int y_axis, int rotation, bool filled, uint32_t c, uint32_t comp, int thickness)
 {
     if ((x_axis > 0) && (y_axis > 0)) {
         if ((x_axis == y_axis) || (rotation == 0)) {
@@ -350,7 +350,7 @@ void stb_image_scratch_draw_rotated_ellipse(void  *data, uint32_t stride, int x,
     }
 }
 
-void stb_image_draw_ellipse(void  *data, uint32_t stride, int cx, int cy, int rx, int ry, int rotation, uint32_t c, uint32_t comp, int thickness, bool fill)
+STBIWDEF void stb_image_draw_ellipse(void  *data, uint32_t stride, int cx, int cy, int rx, int ry, int rotation, uint32_t c, uint32_t comp, int thickness, bool fill)
 {
     int r = rotation % 180;
     if (r < 0) r += 180;
