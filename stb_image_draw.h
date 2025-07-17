@@ -19,85 +19,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
+
+// if STB_IMAGE_WRITE_STATIC causes problems, try defining STBIWDEF to 'inline' or 'static inline'
+#ifndef STBIWDEF
+#ifdef STB_IMAGE_WRITE_STATIC
+#define STBIWDEF  static
+#else
 #ifdef __cplusplus
-extern "C" {
+#define STBIWDEF  extern "C"
+#else
+#define STBIWDEF  extern
 #endif
-
-// Pixel format IDs.
-typedef enum {
-    PIXFORMAT_ID_BINARY     = 1,
-    PIXFORMAT_ID_GRAY       = 2,
-    PIXFORMAT_ID_RGB565     = 3,
-    PIXFORMAT_ID_BAYER      = 4,
-    PIXFORMAT_ID_YUV422     = 5,
-    PIXFORMAT_ID_BGR888     = 6,
-    PIXFORMAT_ID_RGB888     = 7,
-    PIXFORMAT_ID_ARGB8      = 8,
-    PIXFORMAT_ID_RGBA8      = 9,
-    PIXFORMAT_ID_BGRA8      = 10,
-    /* Note: Update PIXFORMAT_IS_VALID when adding new formats */
-} stb_pixformat_id_t;
-
-// Pixel sub-format IDs.
-typedef enum {
-    SUBFORMAT_ID_GRAY8      = 0,
-    SUBFORMAT_ID_GRAY16     = 1,
-    SUBFORMAT_ID_BGGR       = 0, // !!! Note: Make sure bayer sub-formats don't  !!!
-    SUBFORMAT_ID_GBRG       = 1, // !!! overflow the sensor.hw_flags.bayer field !!!
-    SUBFORMAT_ID_GRBG       = 2,
-    SUBFORMAT_ID_RGGB       = 3,
-    SUBFORMAT_ID_YUV422     = 0,
-    SUBFORMAT_ID_YVU422     = 1,
-    /* Note: Update PIXFORMAT_IS_VALID when adding new formats */
-} stb_subformat_id_t;
-
-// Pixel format Byte Per Pixel.
-typedef enum {
-    PIXFORMAT_BPP_BINARY    = 0,
-    PIXFORMAT_BPP_GRAY8     = 1,
-    PIXFORMAT_BPP_GRAY16    = 2,
-    PIXFORMAT_BPP_RGB565    = 2,
-    PIXFORMAT_BPP_BAYER     = 1,
-    PIXFORMAT_BPP_YUV422    = 2,
-    PIXFORMAT_BPP_888       = 3,
-    PIXFORMAT_BPP_8888      = 4,
-    /* Note: Update PIXFORMAT_IS_VALID when adding new formats */
-} stb_pixformat_bpp_t;
-
-// Pixel format flags.
-#define PIXFORMAT_FLAGS_Y       (1 << 28) // YUV format.
-#define PIXFORMAT_FLAGS_M       (1 << 27) // Mutable format.
-#define PIXFORMAT_FLAGS_C       (1 << 26) // Colored format.
-#define PIXFORMAT_FLAGS_J       (1 << 25) // Compressed format (JPEG/PNG).
-#define PIXFORMAT_FLAGS_R       (1 << 24) // RAW/Bayer format.
-#define PIXFORMAT_FLAGS_CY      (PIXFORMAT_FLAGS_C | PIXFORMAT_FLAGS_Y)
-#define PIXFORMAT_FLAGS_CM      (PIXFORMAT_FLAGS_C | PIXFORMAT_FLAGS_M)
-#define PIXFORMAT_FLAGS_CR      (PIXFORMAT_FLAGS_C | PIXFORMAT_FLAGS_R)
-#define PIXFORMAT_FLAGS_CJ      (PIXFORMAT_FLAGS_C | PIXFORMAT_FLAGS_J)
-#define IMLIB_IMAGE_MAX_SIZE(x) ((x) & 0xFFFFFFFF)
-
-// Each pixel format encodes flags, pixel format id and bpp as follows:
-// 31......29  28  27  26  25  24  23..........16  15...........8  7.............0
-// <RESERVED>  YF  MF  CF  JF  RF  <PIXFORMAT_ID>  <SUBFORMAT_ID>  <BYTES_PER_PIX>
-// NOTE: Bit 31-30 must Not be used for pixformat_t to be used as mp_int_t.
-typedef enum {
-    PIXFORMAT_INVALID    = (0x00000000U),
-    PIXFORMAT_BINARY     = (PIXFORMAT_FLAGS_M  | (PIXFORMAT_ID_BINARY << 16) | (0                   << 8) | PIXFORMAT_BPP_BINARY ),
-    PIXFORMAT_GRAYSCALE  = (PIXFORMAT_FLAGS_M  | (PIXFORMAT_ID_GRAY   << 16) | (SUBFORMAT_ID_GRAY8  << 8) | PIXFORMAT_BPP_GRAY8  ),
-    PIXFORMAT_RGB565     = (PIXFORMAT_FLAGS_CM | (PIXFORMAT_ID_RGB565 << 16) | (0                   << 8) | PIXFORMAT_BPP_RGB565 ),
-    PIXFORMAT_ARGB8      = (PIXFORMAT_FLAGS_CM | (PIXFORMAT_ID_ARGB8  << 16) | (0                   << 8) | PIXFORMAT_BPP_8888  ),
-    PIXFORMAT_BAYER      = (PIXFORMAT_FLAGS_CR | (PIXFORMAT_ID_BAYER  << 16) | (SUBFORMAT_ID_BGGR   << 8) | PIXFORMAT_BPP_BAYER  ),
-    PIXFORMAT_BAYER_BGGR = (PIXFORMAT_FLAGS_CR | (PIXFORMAT_ID_BAYER  << 16) | (SUBFORMAT_ID_BGGR   << 8) | PIXFORMAT_BPP_BAYER  ),
-    PIXFORMAT_BAYER_GBRG = (PIXFORMAT_FLAGS_CR | (PIXFORMAT_ID_BAYER  << 16) | (SUBFORMAT_ID_GBRG   << 8) | PIXFORMAT_BPP_BAYER  ),
-    PIXFORMAT_BAYER_GRBG = (PIXFORMAT_FLAGS_CR | (PIXFORMAT_ID_BAYER  << 16) | (SUBFORMAT_ID_GRBG   << 8) | PIXFORMAT_BPP_BAYER  ),
-    PIXFORMAT_BAYER_RGGB = (PIXFORMAT_FLAGS_CR | (PIXFORMAT_ID_BAYER  << 16) | (SUBFORMAT_ID_RGGB   << 8) | PIXFORMAT_BPP_BAYER  ),
-    PIXFORMAT_YUV        = (PIXFORMAT_FLAGS_CY | (PIXFORMAT_ID_YUV422 << 16) | (SUBFORMAT_ID_YUV422 << 8) | PIXFORMAT_BPP_YUV422 ),
-    PIXFORMAT_YUV422     = (PIXFORMAT_FLAGS_CY | (PIXFORMAT_ID_YUV422 << 16) | (SUBFORMAT_ID_YUV422 << 8) | PIXFORMAT_BPP_YUV422 ),
-    PIXFORMAT_YVU422     = (PIXFORMAT_FLAGS_CY | (PIXFORMAT_ID_YUV422 << 16) | (SUBFORMAT_ID_YVU422 << 8) | PIXFORMAT_BPP_YUV422 ),
-    PIXFORMAT_RGB888     = (PIXFORMAT_FLAGS_CM | (PIXFORMAT_ID_RGB888 << 16) | (0                   << 8) | PIXFORMAT_BPP_888 ),
-    PIXFORMAT_BGR888     = (PIXFORMAT_FLAGS_CM | (PIXFORMAT_ID_BGR888 << 16) | (0                   << 8) | PIXFORMAT_BPP_888 ),
-    PIXFORMAT_LAST       = (0xFFFFFFFFU),
-} stb_pixformat_t;
+#endif
+#endif
 
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -106,30 +41,9 @@ typedef enum {
 //cpu is little
 #endif //__BYTE_ORDER__
 
-typedef struct stb_image_s {
-    void *rawdata;
-    unsigned int w;
-    unsigned int h;
-    stb_pixformat_t format;
-} stb_image_t;
-
-
 #define COLOR_R8_G8_B8_TO_RGB565(r8, g8, b8) (uint16_t)((((uint16_t)(r8)&(uint16_t)0xf8) << 8)|(((uint16_t)(g8)&(uint16_t)0xfc)<<3)|(((uint16_t)(b8)&(uint16_t)0xf8)>>3))
 #define COLOR_R8_G8_B8_TO_RGB888(r, g, b) (uint32_t)(((uint32_t)(r)<<16)|((uint32_t)(g)<<8)|((uint32_t)(b)))
 #define COLOR_R8_G8_B8_TO_BGR888(r, g, b) (uint32_t)(((uint32_t)(b)<<16)|((uint32_t)(g)<<8)|((uint32_t)(r)))
-#define COLOR_RGB888_TO_RGB565(c32) (uint16_t)((uint16_t)(((uint32_t)(c32)&(uint32_t)0xf80000)>>8)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xfc00)>>5)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xf8)>>3))
-#define COLOR_BGR888_TO_RGB565(c32) (uint16_t)((uint16_t)(((uint32_t)(c32)&(uint32_t)0xf80000)>>19)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xfc00)>>5)|(uint16_t)(((uint32_t)(c32)&(uint32_t)0xf8)<<8))
-#define COLOR_RGB565_TO_RGB888(c16) (uint32_t)((uint32_t)(((uint32_t)(c16)&(uint32_t)0xf800)<<8)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x7e0)<<3)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x1f)<<3))
-#define COLOR_RGB565_TO_BGR888(c16) (uint32_t)((uint32_t)(((uint32_t)(c16)&(uint32_t)0xf800)>>8)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x7e0)<<3)|(uint32_t)(((uint32_t)(c16)&(uint32_t)0x1f)<<19))
-#define COLOR_RGB888_TO_R8(c32) (uint8_t)(((uint32_t)(c32)>>16)&(uint32_t)0xff)
-#define COLOR_RGB888_TO_G8(c32) (uint8_t)(((uint32_t)(c32)>>8)&(uint32_t)0xff)
-#define COLOR_RGB888_TO_B8(c32) (uint8_t)((uint32_t)(c32)&(uint32_t)0xff)
-#define COLOR_BGR888_TO_R8(c32) (uint8_t)((uint32_t)(c32)&(uint32_t)0xff)
-#define COLOR_BGR888_TO_G8(c32) (uint8_t)(((uint32_t)(c32)>>8)&(uint32_t)0xff)
-#define COLOR_BGR888_TO_B8(c32) (uint8_t)(((uint32_t)(c32)>>16)&(uint32_t)0xff)
-#define COLOR_RGB565_TO_R8(c16) (uint8_t)((uint16_t)((uint16_t)(c16)&(uint16_t)0xf800)>>8)
-#define COLOR_RGB565_TO_G8(c16) (uint8_t)((uint16_t)((uint16_t)(c16)&(uint16_t)0x07e0)>>3)
-#define COLOR_RGB565_TO_B8(c16) (uint8_t)((uint16_t)((uint16_t)(c16)&(uint16_t)0x001f)<<3)
 
 #ifndef M_PI
 #define M_PI    3.14159265f
@@ -148,130 +62,69 @@ typedef struct stb_image_s {
 #define IM_DEG2RAD(x)   (((x)*M_PI)/180)
 #define IM_RAD2DEG(x)   (((x)*180)/M_PI)
 
-int stb_image_draw_get_pixel(stb_image_t *img, int x, int y);
-void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c);
-void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, int r1, int c);
-void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c, int thickness);
-void stb_image_draw_xLine(stb_image_t *img, int x1, int x2, int y, int c);
-void stb_image_draw_yLine(stb_image_t *img, int x, int y1, int y2, int c);
-void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, int c, int thickness, bool fill);
-void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, int thickness, bool fill);
-void stb_image_draw_cross(stb_image_t *img, int x, int y, int c, int size, int thickness);
-void stb_image_scratch_draw_pixel(stb_image_t *img, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, int c);
-void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, int c);
-void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, int c, int thickness);
-void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int x_axis, int y_axis, int rotation, bool filled, int c, int thickness);
-void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, int rotation, int c, int thickness, bool fill);
-uint32_t stb_image_draw_blend_rgb888(uint32_t fg_color, uint32_t bg_color, uint8_t alpha);
-uint16_t stb_image_draw_blend_rgb565(uint16_t fg_color, uint16_t bg_color, uint8_t alpha);
+STBIWDEF inline uint32_t stb_image_draw_get_pixel(void *data, uint32_t stride, int x, int y, uint32_t comp);
+STBIWDEF inline void stb_image_draw_set_pixel(void *data, uint32_t stride, int x, int y, uint32_t c, uint32_t comp);
+STBIWDEF void stb_image_draw_point_fill(void  *data, uint32_t stride, int cx, int cy, int r0, int r1, uint32_t c, uint32_t comp);
+STBIWDEF void stb_image_draw_line(void  *data, uint32_t stride, int x0, int y0, int x1, int y1, uint32_t c, uint32_t comp, int thickness);
+STBIWDEF void stb_image_draw_xLine(void  *data, uint32_t stride, int x1, int x2, int y, uint32_t c, uint32_t comp);
+STBIWDEF void stb_image_draw_yLine(void  *data, uint32_t stride, int x, int y1, int y2, uint32_t c, uint32_t comp);
+STBIWDEF void stb_image_draw_rectangle(void  *data, uint32_t stride, int rx, int ry, int rw, int rh, uint32_t c, uint32_t comp, int thickness, bool fill);
+STBIWDEF void stb_image_draw_draw_circle(void  *data, uint32_t stride, int cx, int cy, int r, uint32_t c, uint32_t comp, int thickness, bool fill);
+STBIWDEF void stb_image_draw_cross(void  *data, uint32_t stride, int x, int y, uint32_t c, uint32_t comp, int size, int thickness);
+STBIWDEF void stb_image_scratch_draw_pixel(void  *data, uint32_t stride, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, uint32_t c, uint32_t comp);
+STBIWDEF void stb_image_scratch_draw_line(void  *data, uint32_t stride, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, uint32_t c, uint32_t comp);
+STBIWDEF void stb_image_scratch_draw_sheared_ellipse(void  *data, uint32_t stride, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, uint32_t c, uint32_t comp, int thickness);
+STBIWDEF void stb_image_scratch_draw_rotated_ellipse(void  *data, uint32_t stride, int x, int y, int x_axis, int y_axis, int rotation, bool filled, uint32_t c, uint32_t comp, int thickness);
+STBIWDEF void stb_image_draw_ellipse(void  *data, uint32_t stride, int cx, int cy, int rx, int ry, int rotation, uint32_t c, uint32_t comp, int thickness, bool fill);
+STBIWDEF void stb_image_draw_image(void  *dist, uint32_t dstride, void  *src, uint32_t sstride, int dx, int dy, int sw, int sh, unsigned char alpha);
 
-#ifdef __cplusplus
-}
-#endif
+
+
 
 #ifdef STB_IMAGE_DRAW_IMPLEMENTATION
-#ifndef STB_IMAGE_DRAW_IMPLEMENTATION_SRC
-#define STB_IMAGE_DRAW_IMPLEMENTATION_SRC
-uint32_t stb_image_draw_blend_rgb888(uint32_t fg_color, uint32_t bg_color, uint8_t alpha) {
 
-    uint8_t r1 = COLOR_RGB888_TO_R8(fg_color);
-    uint8_t g1 = COLOR_RGB888_TO_G8(fg_color);
-    uint8_t b1 = COLOR_RGB888_TO_B8(fg_color);
-
-    uint8_t r2 = COLOR_RGB888_TO_R8(bg_color);
-    uint8_t g2 = COLOR_RGB888_TO_G8(bg_color);
-    uint8_t b2 = COLOR_RGB888_TO_B8(bg_color);
-
-    uint8_t r = (r1 * alpha + r2 * (255 - alpha)) / 255;
-    uint8_t g = (g1 * alpha + g2 * (255 - alpha)) / 255;
-    uint8_t b = (b1 * alpha + b2 * (255 - alpha)) / 255;
-
-    return COLOR_R8_G8_B8_TO_RGB888(r, g, b);
-}
-
-uint16_t stb_image_draw_blend_rgb565(uint16_t fg_color, uint16_t bg_color, uint8_t alpha) {
-
-    uint8_t r1 = COLOR_RGB565_TO_R8(fg_color);
-    uint8_t g1 = COLOR_RGB565_TO_G8(fg_color);
-    uint8_t b1 = COLOR_RGB565_TO_B8(fg_color);
-
-    uint8_t r2 = COLOR_RGB565_TO_R8(bg_color);
-    uint8_t g2 = COLOR_RGB565_TO_G8(bg_color);
-    uint8_t b2 = COLOR_RGB565_TO_B8(bg_color);
-
-    uint8_t r = (r1 * alpha + r2 * (255 - alpha)) / 255;
-    uint8_t g = (g1 * alpha + g2 * (255 - alpha)) / 255;
-    uint8_t b = (b1 * alpha + b2 * (255 - alpha)) / 255;
-
-    return COLOR_R8_G8_B8_TO_RGB565(r, g, b);
-}
-
-int stb_image_draw_get_pixel(stb_image_t *img, int x, int y)
+STBIWDEF inline void stb_image_draw_set_pixel(void *data, uint32_t stride, int x, int y, uint32_t c, uint32_t comp)
 {
-    if(y >= img->h || x >= img->w) return -1;
-    switch (img->format) {
-        case PIXFORMAT_RGB565: {
-            return (int)((unsigned short *) img->rawdata)[(img->w * y) + x];
-        }
-        case PIXFORMAT_RGB888: {
-            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
-            return COLOR_R8_G8_B8_TO_RGB888(pix[0], pix[1], pix[2]);
-        }
-        case PIXFORMAT_BGR888: {
-            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
-            return COLOR_R8_G8_B8_TO_BGR888(pix[2], pix[1], pix[0]);
-        }
-        default: {
-            return -1;
-        }
+    uint8_t *ptr = (uint8_t *)data + stride * y + comp * x;
+    uint8_t *ptrc = (uint8_t *)&c;
+    switch (comp) {
+        case 4:ptr[3] = ptrc[3];
+        case 3:ptr[2] = ptrc[2];
+        case 2:ptr[1] = ptrc[1];
+        case 1:ptr[0] = ptrc[0];
+        default:
+            break;
     }
 }
 
-void  stb_image_draw_set_pixel(stb_image_t *img, int x, int y, int c)
+STBIWDEF inline uint32_t stb_image_draw_get_pixel(void *data, uint32_t stride, int x, int y, uint32_t comp)
 {
-    if(y >= img->h || x >= img->w) return ;
-    switch (img->format)
-    {
-    case PIXFORMAT_RGB565:
-        {
-            unsigned short *pix = (unsigned short*)img->rawdata;
-            pix[img->w * y + x] = (unsigned short)c;
-        }
-        break; 
-    case PIXFORMAT_RGB888:
-        {
-            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
-            pix[0] = COLOR_RGB888_TO_R8(c);
-            pix[1] = COLOR_RGB888_TO_G8(c);
-            pix[2] = COLOR_RGB888_TO_B8(c);
-        }
-        break;
-    case PIXFORMAT_BGR888:
-        {
-            uint8_t *pix = ((uint8_t*)img->rawdata) + (img->w * y + x) * 3;
-            pix[0] = COLOR_BGR888_TO_B8(c);
-            pix[1] = COLOR_BGR888_TO_G8(c);
-            pix[2] = COLOR_BGR888_TO_R8(c);
-        }
-        break;
-    default:
-        return ;
-        break;
+    uint32_t c = 0;
+    uint8_t* ptr = (uint8_t*)data + stride * y + comp * x;
+    uint8_t *ptrc = &c;
+    switch (comp) {
+        case 4:ptrc[3] = ptr[3];
+        case 3:ptrc[2] = ptr[2];
+        case 2:ptrc[1] = ptr[1];
+        case 1:ptrc[0] = ptr[0];
+        default:
+            break;
     }
+    return c;
 }
 
-void stb_image_draw_point_fill(stb_image_t *img, int cx, int cy, int r0, int r1, int c)
+void stb_image_draw_point_fill(const void  *data, uint32_t stride, int cx, int cy, int r0, int r1, uint32_t c, uint32_t comp)
 {
     for (int y = r0; y <= r1; y++) {
         for (int x = r0; x <= r1; x++) {
             if (((x * x) + (y * y)) <= (r0 * r0)) {
-                stb_image_draw_set_pixel(img, cx + x, cy + y, c);
+                stb_image_draw_set_pixel(data, stride, cx + x, cy + y, c, comp);
             }
         }
     }
 }
 
-void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c, int thickness)
+void stb_image_draw_line(void  *data, uint32_t stride, int x0, int y0, int x1, int y1, uint32_t c, uint32_t comp, int thickness)
 {
     if (thickness == 1) {
         int dx = abs(x1 - x0), sx = (x0 < x1) ? 1 : -1;
@@ -279,7 +132,7 @@ void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c
         int err = ((dx > dy) ? dx : -dy) / 2;
 
         for (;;) {
-            stb_image_draw_set_pixel(img, x0, y0, c);
+            stb_image_draw_set_pixel(data, stride, x0, y0, c, comp);
             if ((x0 == x1) && (y0 == y1)) break;
             int e2 = err;
             if (e2 > -dx) { err -= dy; x0 += sx; }
@@ -294,7 +147,7 @@ void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c
         int err = ((dx > dy) ? dx : -dy) / 2;
 
         for (;;) {
-            stb_image_draw_point_fill(img, x0, y0, -thickness0, thickness1, c);
+            stb_image_draw_point_fill(data, stride, x0, y0, -thickness0, thickness1, c, comp);
             if ((x0 == x1) && (y0 == y1)) break;
             int e2 = err;
             if (e2 > -dx) { err -= dy; x0 += sx; }
@@ -303,22 +156,22 @@ void stb_image_draw_line(stb_image_t *img, int x0, int y0, int x1, int y1, int c
     }
 }
 
-void stb_image_draw_xLine(stb_image_t *img, int x1, int x2, int y, int c)
+void stb_image_draw_xLine(void  *data, uint32_t stride, int x1, int x2, int y, uint32_t c, uint32_t comp)
 {
-    while (x1 <= x2) stb_image_draw_set_pixel(img, x1++, y, c);
+    while (x1 <= x2) stb_image_draw_set_pixel(data, stride, x1++, y, c, comp);
 }
 
-void stb_image_draw_yLine(stb_image_t *img, int x, int y1, int y2, int c)
+void stb_image_draw_yLine(void  *data, uint32_t stride, int x, int y1, int y2, uint32_t c, uint32_t comp)
 {
-    while (y1 <= y2) stb_image_draw_set_pixel(img, x, y1++, c);
+    while (y1 <= y2) stb_image_draw_set_pixel(data, stride, x, y1++, c, comp);
 }
 
-void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, int c, int thickness, bool fill)
+void stb_image_draw_rectangle(void  *data, uint32_t stride, int rx, int ry, int rw, int rh, uint32_t c, uint32_t comp, int thickness, bool fill)
 {
     if (fill) {
         for (int y = ry, yy = ry + rh; y < yy; y++) {
             for (int x = rx, xx = rx + rw; x < xx; x++) {
-                stb_image_draw_set_pixel(img, x, y, c);
+                stb_image_draw_set_pixel(data, stride, x, y, c, comp);
             }
         }
     } else if (thickness > 0) {
@@ -326,20 +179,20 @@ void stb_image_draw_rectangle(stb_image_t *img, int rx, int ry, int rw, int rh, 
         int thickness1 = (thickness - 1) / 2;
 
         for (int i = rx - thickness0, j = rx + rw + thickness1, k = ry + rh - 1; i < j; i++) {
-            stb_image_draw_yLine(img, i, ry - thickness0, ry + thickness1, c);
-            stb_image_draw_yLine(img, i, k - thickness0, k + thickness1, c);
+            stb_image_draw_yLine(data, stride, i, ry - thickness0, ry + thickness1, c, comp);
+            stb_image_draw_yLine(data, stride, i, k - thickness0, k + thickness1, c, comp);
         }
 
         for (int i = ry - thickness0, j = ry + rh + thickness1, k = rx + rw - 1; i < j; i++) {
-            stb_image_draw_xLine(img, rx - thickness0, rx + thickness1, i, c);
-            stb_image_draw_xLine(img, k - thickness0, k + thickness1, i, c);
+            stb_image_draw_xLine(data, stride, rx - thickness0, rx + thickness1, i, c, comp);
+            stb_image_draw_xLine(data, stride, k - thickness0, k + thickness1, i, c, comp);
         }
     }
 }
-void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, int thickness, bool fill)
+void stb_image_draw_draw_circle(void  *data, uint32_t stride, int cx, int cy, int r, uint32_t c, uint32_t comp, int thickness, bool fill)
 {
     if (fill) {
-        stb_image_draw_point_fill(img, cx, cy, -r, r, c);
+        stb_image_draw_point_fill(data, stride, cx, cy, -r, r, c, comp);
     } else if (thickness > 0) {
         int thickness0 = (thickness - 0) / 2;
         int thickness1 = (thickness - 1) / 2;
@@ -352,14 +205,14 @@ void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, 
         int erri = 1 - xi;
 
         while(xo >= y) {
-            stb_image_draw_xLine(img, cx + xi, cx + xo, cy + y,  c);
-            stb_image_draw_yLine(img, cx + y,  cy + xi, cy + xo, c);
-            stb_image_draw_xLine(img, cx - xo, cx - xi, cy + y,  c);
-            stb_image_draw_yLine(img, cx - y,  cy + xi, cy + xo, c);
-            stb_image_draw_xLine(img, cx - xo, cx - xi, cy - y,  c);
-            stb_image_draw_yLine(img, cx - y,  cy - xo, cy - xi, c);
-            stb_image_draw_xLine(img, cx + xi, cx + xo, cy - y,  c);
-            stb_image_draw_yLine(img, cx + y,  cy - xo, cy - xi, c);
+            stb_image_draw_xLine(data, stride, cx + xi, cx + xo, cy + y,  c, comp);
+            stb_image_draw_yLine(data, stride, cx + y,  cy + xi, cy + xo, c, comp);
+            stb_image_draw_xLine(data, stride, cx - xo, cx - xi, cy + y,  c, comp);
+            stb_image_draw_yLine(data, stride, cx - y,  cy + xi, cy + xo, c, comp);
+            stb_image_draw_xLine(data, stride, cx - xo, cx - xi, cy - y,  c, comp);
+            stb_image_draw_yLine(data, stride, cx - y,  cy - xo, cy - xi, c, comp);
+            stb_image_draw_xLine(data, stride, cx + xi, cx + xo, cy - y,  c, comp);
+            stb_image_draw_yLine(data, stride, cx + y,  cy - xo, cy - xi, c, comp);
 
             y++;
 
@@ -384,25 +237,25 @@ void stb_image_draw_draw_circle(stb_image_t *img, int cx, int cy, int r, int c, 
     }
 }
 
-void stb_image_draw_cross(stb_image_t *img, int x, int y, int c, int size, int thickness)
+void stb_image_draw_cross(void  *data, uint32_t stride, int x, int y, uint32_t c, uint32_t comp, int size, int thickness)
 {
-    stb_image_draw_line(img, x - size, y        , x + size, y        , c, thickness);
-    stb_image_draw_line(img, x        , y - size, x        , y + size, c, thickness);
+    stb_image_draw_line(data, stride, x - size, y        , x + size, y        , c, comp, thickness);
+    stb_image_draw_line(data, stride, x        , y - size, x        , y + size, c, comp, thickness);
 }
 
-void stb_image_scratch_draw_pixel(stb_image_t *img, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, int c)
+void stb_image_scratch_draw_pixel(void  *data, uint32_t stride, int x0, int y0, int dx, int dy, float shear_dx, float shear_dy, int r0, int r1, uint32_t c, uint32_t comp)
 {
     int _roundf = (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
-    stb_image_draw_point_fill(img, x0 + dx, y0 + dy + _roundf, r0, r1, c);
+    stb_image_draw_point_fill(data, stride, x0 + dx, y0 + dy + _roundf, r0, r1, c, comp);
 }
 
-void stb_image_scratch_draw_line(stb_image_t *img, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, int c)
+void stb_image_scratch_draw_line(void  *data, uint32_t stride, int x0, int y0, int dx, int dy0, int dy1, float shear_dx, float shear_dy, uint32_t c, uint32_t comp)
 {
     int y = y0 +  (int)((float)(((float)dx * (float)shear_dy) / (float)shear_dx) + 0.5f);
-    stb_image_draw_yLine(img, x0 + dx, y + dy0, y + dy1, c);
+    stb_image_draw_yLine(data, stride, x0 + dx, y + dy0, y + dy1, c, comp);
 }
 
-void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, int c, int thickness)
+void stb_image_scratch_draw_sheared_ellipse(void  *data, uint32_t stride, int x0, int y0, int width, int height, bool filled, float shear_dx, float shear_dy, uint32_t c, uint32_t comp, int thickness)
 {
     int thickness0 = (thickness - 0) / 2;
     int thickness1 = (thickness - 1) / 2;
@@ -418,13 +271,13 @@ void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, in
 
         while ((b_squared * x) <= (a_squared * y)) {
             if (filled) {
-                stb_image_scratch_draw_line(img, x0, y0, x, -y, y, shear_dx, shear_dy, c);
-                stb_image_scratch_draw_line(img, x0, y0, -x, -y, y, shear_dx, shear_dy, c);
+                stb_image_scratch_draw_line(data, stride, x0, y0, x, -y, y, shear_dx, shear_dy, c, comp);
+                stb_image_scratch_draw_line(data, stride, x0, y0, -x, -y, y, shear_dx, shear_dy, c, comp);
             } else {
-                stb_image_scratch_draw_pixel(img, x0, y0, x, y, shear_dx, shear_dy, -thickness0, thickness1, c);
-                stb_image_scratch_draw_pixel(img, x0, y0, -x, y, shear_dx, shear_dy, -thickness0, thickness1, c);
-                stb_image_scratch_draw_pixel(img, x0, y0, x, -y, shear_dx, shear_dy, -thickness0, thickness1, c);
-                stb_image_scratch_draw_pixel(img, x0, y0, -x, -y, shear_dx, shear_dy, -thickness0, thickness1, c);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, x, y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, -x, y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, x, -y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, -x, -y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
             }
 
             if (sigma >= 0) {
@@ -442,13 +295,13 @@ void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, in
 
         while ((a_squared * y) <= (b_squared * x)) {
             if (filled) {
-                stb_image_scratch_draw_line(img, x0, y0, x, -y, y, shear_dx, shear_dy, c);
-                stb_image_scratch_draw_line(img, x0, y0, -x, -y, y, shear_dx, shear_dy, c);
+                stb_image_scratch_draw_line(data, stride, x0, y0, x, -y, y, shear_dx, shear_dy, c, comp);
+                stb_image_scratch_draw_line(data, stride, x0, y0, -x, -y, y, shear_dx, shear_dy, c, comp);
             } else {
-                stb_image_scratch_draw_pixel(img, x0, y0, x, y, shear_dx, shear_dy, -thickness0, thickness1, c);
-                stb_image_scratch_draw_pixel(img, x0, y0, -x, y, shear_dx, shear_dy, -thickness0, thickness1, c);
-                stb_image_scratch_draw_pixel(img, x0, y0, x, -y, shear_dx, shear_dy, -thickness0, thickness1, c);
-                stb_image_scratch_draw_pixel(img, x0, y0, -x, -y, shear_dx, shear_dy, -thickness0, thickness1, c);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, x, y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, -x, y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, x, -y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
+                stb_image_scratch_draw_pixel(data, stride, x0, y0, -x, -y, shear_dx, shear_dy, -thickness0, thickness1, c, comp);
             }
 
             if (sigma >= 0) {
@@ -462,13 +315,13 @@ void stb_image_scratch_draw_sheared_ellipse(stb_image_t *img, int x0, int y0, in
     }
 }
 
-void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int x_axis, int y_axis, int rotation, bool filled, int c, int thickness)
+void stb_image_scratch_draw_rotated_ellipse(void  *data, uint32_t stride, int x, int y, int x_axis, int y_axis, int rotation, bool filled, uint32_t c, uint32_t comp, int thickness)
 {
     if ((x_axis > 0) && (y_axis > 0)) {
         if ((x_axis == y_axis) || (rotation == 0)) {
-            stb_image_scratch_draw_sheared_ellipse(img, x, y, x_axis / 2, y_axis / 2, filled, 1, 0, c, thickness);
+            stb_image_scratch_draw_sheared_ellipse(data, stride, x, y, x_axis / 2, y_axis / 2, filled, 1, 0, c, comp, thickness);
         } else if (rotation == 90) {
-            stb_image_scratch_draw_sheared_ellipse(img, x, y, y_axis / 2, x_axis / 2, filled, 1, 0, c, thickness);
+            stb_image_scratch_draw_sheared_ellipse(data, stride, x, y, y_axis / 2, x_axis / 2, filled, 1, 0, c, comp, thickness);
         } else {
 
             // Avoid rotations above 90.
@@ -492,32 +345,29 @@ void stb_image_scratch_draw_rotated_ellipse(stb_image_t *img, int x, int y, int 
             float shear_dy = (x_axis * cosf(theta) * sinf(IM_DEG2RAD(rotation))) + (y_axis * sinf(theta) * cosf(IM_DEG2RAD(rotation)));
             float shear_x_axis = fabsf(shear_dx);
             float shear_y_axis = IM_DIV((y_axis * x_axis), shear_x_axis);
-            stb_image_scratch_draw_sheared_ellipse(img, x, y, (int)floorf(shear_x_axis / 2), (int)floorf(shear_y_axis / 2), filled, shear_dx, shear_dy, c, thickness);
+            stb_image_scratch_draw_sheared_ellipse(data, stride, x, y, (int)floorf(shear_x_axis / 2), (int)floorf(shear_y_axis / 2), filled, shear_dx, shear_dy, c, comp, thickness);
         }
     }
 }
 
-void stb_image_draw_ellipse(stb_image_t *img, int cx, int cy, int rx, int ry, int rotation, int c, int thickness, bool fill)
+void stb_image_draw_ellipse(void  *data, uint32_t stride, int cx, int cy, int rx, int ry, int rotation, uint32_t c, uint32_t comp, int thickness, bool fill)
 {
     int r = rotation % 180;
     if (r < 0) r += 180;
 
-    stb_image_scratch_draw_rotated_ellipse(img, cx, cy, rx * 2, ry * 2, r, fill, c, thickness);
+    stb_image_scratch_draw_rotated_ellipse(data, stride, cx, cy, rx * 2, ry * 2, r, fill, c, comp, thickness);
 }
-// static void stb_image_draw_flood_fill(stb_image_t *img, int x, int y,
+// static void stb_image_draw_flood_fill(void  *data, int x, int y,
 //                       float seed_threshold, float floating_threshold,
 //                       int c, bool invert, bool clear_background, void *mask);
 
-// void imlib_draw_string(void *img, int x_off, int y_off, const char *str, int c, float scale, int x_spacing, int y_spacing, bool mono_space,
+// void imlib_draw_string(void *data, int x_off, int y_off, const char *str, int c, float scale, int x_spacing, int y_spacing, bool mono_space,
 //                        int char_rotation, bool char_hmirror, bool char_vflip, int string_rotation, bool string_hmirror, bool string_hflip);
-// void imlib_draw_image_fast(void *img, void *other, int x_off, int y_off, float x_scale, float y_scale, float alpha, void *mask);
+// void imlib_draw_image_fast(void *data, void *other, int x_off, int y_off, float x_scale, float y_scale, float alpha, void *mask);
 #endif
 #endif
 
 
-
-
-#endif
 
 /*
 ------------------------------------------------------------------------------
